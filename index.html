@@ -1,9 +1,11 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <title>TLOG16UI</title>
+    <meta charset="UTF-8">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="manifest" href="manifest.json">
     <script src="../node_modules/jquery/dist/jquery.min.js"></script>
     <script src="../node_modules/datejs/build/date.js"></script>
     <script>
@@ -22,34 +24,13 @@
         var year = now.getFullYear();
         
         function load() {
-            var firstDay = new Date(year, month, 1);
-            var startingDay = firstDay.getDay();
-            
-            var text = "";
-            for(i = 1; i < startingDay; i++) {
-                text += "<li></li>";
-            }
-            
-            days = days_in_month[month];
-            if (month === 1) {
-                if ((this.year % 4 === 0 && this.year % 100 !== 0) || this.year % 400 === 0){
-                    days = 29;
-                }
-            }
-            for (i = 1; i <= days; i++) {
-                if(i === selected_day && month === selected_month && year === selected_year)
-                    text += "<li><span class=\"active\">" + i + "</span><br>EM: 10</li>";
-                else
-                    text += "<li><label onclick=\"set_day(" + i + ")\">" + i + "</label><br>EM: 10</li>";
-            }
-            
-            document.getElementById("days").innerHTML = text;
-            document.getElementById("month_name").innerHTML = months_labels[month] + "<br><span style=\"font-size:18px\">" + year + "</span>";
+            document.getElementById("month_name").innerHTML = months_labels[month] + "<br>" + year;
+            load_days();
         }
         
         function prev_month() {
             month--;
-            if(month < 0) {
+            if (month < 0) {
                 month = 11;
                 year--;
             }
@@ -58,7 +39,7 @@
         
         function next_month() {
             month = (month + 1) % 12;
-            if(month === 0) year++;
+            if (month === 0) year++;
             
             load();
         }
@@ -69,6 +50,94 @@
             selected_year = year;
             
             load();
+        }
+		
+        function get_request(type, link) {
+            var xhttp;
+            if (window.XMLHttpRequest) {
+                xhttp = new XMLHttpRequest();
+            } else {
+                xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            xhttp.open(type, link, true);
+            xhttp.setRequestHeader("Access-Control-Allow-Origin", link);
+            xhttp.setRequestHeader("Content-Type", "application/json");
+
+            return xhttp;
+        }
+
+        function load_days() {
+            var firstDay = new Date(year, month, 1);
+            var startingDay = (firstDay.getDay() + 6) % 7;
+            
+            var text = "";
+            for(i = 1; i <= startingDay; i++) {
+                text += "<li></li>";
+            }
+			
+            days = days_in_month[month];
+            if (month === 1) {
+                if ((this.year % 4 === 0 && this.year % 100 !== 0) || this.year % 400 === 0) {
+                    days = 29;
+                }
+            }
+            
+            for (i = 1; i <= days; i++) {
+                text += "<li><label id='day_" + i + "' class='day' onclick=\"set_day(" + i + ")\">" + i + "</label>";
+                text += "<br><label id='day_em_" + i + "'></label></li>";
+            }
+			
+            document.getElementById("days").innerHTML = text;
+			
+            var xhttp = get_request("GET", "http://192.168.99.100:9080/timelogger/workmonths/" + year + "/" + (month + 1));
+						
+            xhttp.onreadystatechange = on_ready_load_days;
+			
+            xhttp.send();
+        }
+        
+        function on_ready_load_days() {
+            if (this.readyState === 4 && this.status === 200) {
+                var jsonObj = JSON.parse(this.responseText);
+
+                for (j = 0; j < jsonObj.length; j++) {
+                    document.getElementById("day_" + jsonObj[j].actualDay[2]).className = "workday";
+                    document.getElementById("day_em_" + jsonObj[j].actualDay[2]).innerHTML = "EM: " + jsonObj[j].extraMinPerDay;
+                }
+
+                var day_id = "day_" + selected_day;
+                if (month === selected_month && year === selected_year) {
+                    if (document.getElementById(day_id).className === "workday") {
+                        document.getElementById("make_workday").innerHTML = "";
+                    } else {
+                        document.getElementById("make_workday").innerHTML = "<br>Required minute:" + 
+                            "<input id=\"reqMinute\" type=\"number\" required=\"true\" value=\"450\">" + 
+                            "<button type=\"button\" onclick=\"activate_day()\">Make workday</button>";
+                    }
+                    document.getElementById(day_id).className = "day_active";
+                } else {
+                    document.getElementById("make_workday").innerHTML = "";
+                }
+            }
+        }
+		
+        function activate_day() {
+            var obj = {};
+            obj.year = year;
+            obj.month = month + 1;
+            obj.day = selected_day;
+            obj.requiredHours = Number(document.getElementById("reqMinute").value);
+
+            var xhttp = get_request("POST", "http://192.168.99.100:9080/timelogger/workmonths/workdays");
+						
+            xhttp.onreadystatechange = function() {
+                if (this.readyState === 4 && this.status === 200) {
+                    load();
+                }
+            };
+            
+            xhttp.send(JSON.stringify(obj));
         }
     </script>
 </head>
@@ -102,6 +171,9 @@
                 </ul>
 
                 <ul id="days" class="table_field"></ul>
+								
+		<div id="make_workday"></div>
+				
                 <p class="info">Required working hours: 40</p>
                 <p class="info">Workdays: 40</p>
                 <p class="info">Required minute: 40</p>
