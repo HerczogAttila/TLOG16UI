@@ -109,13 +109,18 @@
                         document.getElementById("day_em_" + jsonObj[j].actualDay[2]).style.color = "red";
                     if (jsonObj[j].extraMinPerDay > 0)
                         document.getElementById("day_em_" + jsonObj[j].actualDay[2]).style.color = "green";
+                    
+                    if (month === selected_month && year === selected_year && jsonObj[j].actualDay[2] === selected_day) {
+                        document.getElementById("make_workday").innerHTML = "<p class='info'>Day statistic:</p>" +
+                                "<p class='info'>-Required minute: " + jsonObj[j].requiredMinPerDay + "</p>" +
+                                "<p class='info'>-Extra minute: " + jsonObj[j].extraMinPerDay + "</p>" +
+                                "<p class='info'>-Minute: " + jsonObj[j].sumMinPerDay; + "</p>";
+                    }
                 }
 
                 var day_id = "day_" + selected_day;
                 if (month === selected_month && year === selected_year) {
-                    if (document.getElementById(day_id).className === "workday") {
-                        document.getElementById("make_workday").innerHTML = "";
-                    } else {
+                    if (document.getElementById(day_id).className !== "workday") {
                         document.getElementById("make_workday").innerHTML = "<br>Required minute:" + 
                             "<input id=\"reqMinute\" type=\"number\" required=\"true\" value=\"450\">" + 
                             "<button type=\"button\" onclick=\"activate_day()\">Make workday</button>";
@@ -205,10 +210,11 @@
 								
 		<div id="make_workday"></div>
                 
-                <p class="info">Workdays: <label id="workdays">0</label></p>
-                <p class="info">Required working minutes: <label id="req_work_minutes">0</label></p>
-                <p class="info">Minutes: <label id="minutes">0</label></p>
-                <p class="info">Extra minute: <label id="extra_minute">0</label></p>
+                <p class="info">Month statistic:</p>
+                <p class="info">-Workdays: <label id="workdays">0</label></p>
+                <p class="info">-Required working minutes: <label id="req_work_minutes">0</label></p>
+                <p class="info">-Minutes: <label id="minutes">0</label></p>
+                <p class="info">-Extra minute: <label id="extra_minute">0</label></p>
             </div>
         </div>
     </div>
