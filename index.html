@@ -26,6 +26,7 @@
         function load() {
             document.getElementById("month_name").innerHTML = months_labels[month] + "<br>" + year;
             load_days();
+            month_statistic();
         }
         
         function prev_month() {
@@ -90,20 +91,24 @@
 			
             document.getElementById("days").innerHTML = text;
 			
-            var xhttp = get_request("GET", "http://192.168.99.100:9080/timelogger/workmonths/" + year + "/" + (month + 1));
-						
-            xhttp.onreadystatechange = on_ready_load_days;
-			
+            var xhttp = get_request("GET", "http://192.168.99.100:9080/timelogger/workmonths/" + year + "/" + (month + 1));				
+            xhttp.onreadystatechange = on_ready_load_days;	
             xhttp.send();
         }
         
         function on_ready_load_days() {
             if (this.readyState === 4 && this.status === 200) {
                 var jsonObj = JSON.parse(this.responseText);
+                
+                document.getElementById("workdays").innerHTML = jsonObj.length;
 
                 for (j = 0; j < jsonObj.length; j++) {
                     document.getElementById("day_" + jsonObj[j].actualDay[2]).className = "workday";
-                    document.getElementById("day_em_" + jsonObj[j].actualDay[2]).innerHTML = "EM: " + jsonObj[j].extraMinPerDay;
+                    document.getElementById("day_em_" + jsonObj[j].actualDay[2]).innerHTML = jsonObj[j].extraMinPerDay;
+                    if (jsonObj[j].extraMinPerDay < 0)
+                        document.getElementById("day_em_" + jsonObj[j].actualDay[2]).style.color = "red";
+                    if (jsonObj[j].extraMinPerDay > 0)
+                        document.getElementById("day_em_" + jsonObj[j].actualDay[2]).style.color = "green";
                 }
 
                 var day_id = "day_" + selected_day;
@@ -118,6 +123,32 @@
                     document.getElementById(day_id).className = "day_active";
                 } else {
                     document.getElementById("make_workday").innerHTML = "";
+                }
+            }
+        }
+        
+        function month_statistic() {
+            var xhttp = get_request("GET", "http://192.168.99.100:9080/timelogger/workmonths/");				
+            xhttp.onreadystatechange = on_ready_month_statistic;	
+            xhttp.send();
+        }
+        
+        function on_ready_month_statistic() {
+            if (this.readyState === 4 && this.status === 200) {
+                var jsonObj = JSON.parse(this.responseText);
+                document.getElementById("req_work_minutes").innerHTML = 0;
+                document.getElementById("minutes").innerHTML = 0;
+                document.getElementById("extra_minute").innerHTML = 0;
+                for (j = 0; j < jsonObj.length; j++) {
+                    if (jsonObj[j].yearMonth[0] === year && jsonObj[j].yearMonth[1] === (month + 1)) {
+                        document.getElementById("req_work_minutes").innerHTML = jsonObj[j].requiredMinPerMonth;
+                        document.getElementById("minutes").innerHTML = jsonObj[j].sumPerMonth;
+                        document.getElementById("extra_minute").innerHTML = jsonObj[j].extraMinPerMonth;
+                        if (jsonObj[j].extraMinPerMonth < 0)
+                            document.getElementById("extra_minute").style.color = "red";
+                        else
+                            document.getElementById("extra_minute").style.color = "green";
+                    }
                 }
             }
         }
@@ -173,12 +204,11 @@
                 <ul id="days" class="table_field"></ul>
 								
 		<div id="make_workday"></div>
-				
-                <p class="info">Required working hours: 40</p>
-                <p class="info">Workdays: 40</p>
-                <p class="info">Required minute: 40</p>
-                <p class="info">Minute: 40</p>
-                <p class="info">Extra minute: 40</p>
+                
+                <p class="info">Workdays: <label id="workdays">0</label></p>
+                <p class="info">Required working minutes: <label id="req_work_minutes">0</label></p>
+                <p class="info">Minutes: <label id="minutes">0</label></p>
+                <p class="info">Extra minute: <label id="extra_minute">0</label></p>
             </div>
         </div>
     </div>
