@@ -180,7 +180,7 @@
                 }
                 
                 if (this.status === 204) {
-                    xhttp = get_request("POST", "http://192.168.99.100:9080/timelogger/workmonths/workweekenddays");
+                    xhttp = get_request("POST", "http://192.168.99.100:9080/timelogger/workmonths/workdaysweekend");
                     xhttp.onreadystatechange = function() {
                         if (this.readyState === 4 && this.status === 200) {
                             load();
