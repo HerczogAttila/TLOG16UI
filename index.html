@@ -159,6 +159,13 @@
         }
 		
         function activate_day() {
+            var day = new Date(year, month, selected_day);
+            var i = day.getDay();
+            
+            if(i === 6 || i === 0)
+                if (!confirm('Are you sure working on weekend?')) 
+                    return;
+            
             var obj = {};
             obj.year = year;
             obj.month = month + 1;
@@ -170,6 +177,16 @@
             xhttp.onreadystatechange = function() {
                 if (this.readyState === 4 && this.status === 200) {
                     load();
+                }
+                
+                if (this.status === 204) {
+                    xhttp = get_request("POST", "http://192.168.99.100:9080/timelogger/workmonths/workweekenddays");
+                    xhttp.onreadystatechange = function() {
+                        if (this.readyState === 4 && this.status === 200) {
+                            load();
+                        }
+                    };
+                    xhttp.send(JSON.stringify(obj));
                 }
             };
             
